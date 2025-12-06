@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn:hover { background: #5568d3; }
+
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h1>Đăng nhập</h1>
+
+    <div th:if="${param.error}" class="error">
+        Tên đăng nhập hoặc mật khẩu không đúng!
+    </div>
+
+    <div th:if="${param.logout}" style="background: #4caf50; color: white; padding: 0.75rem; border-radius: 5px; margin-bottom: 1rem;">
+        Đăng xuất thành công!
+    </div>
+
+    <form th:action="@{/login}" method="post">
+        <div class="form-group">
+            <label>Tên đăng nhập</label>
+            <input type="text" name="username" required>
+        </div>
+
+        <div class="form-group">
+            <label>Mật khẩu</label>
+            <input type="password" name="password" required>
+        </div>
+
+        <button type="submit" class="btn">Đăng nhập</button>
+    </form>
+
+    <div class="links">
+        <p>Chưa có tài khoản? <a href="/register">Đăng ký ngay</a></p>
+        <p><a href="/">← Về trang chủ</a></p>
+    </div>
+
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; color: #999; font-size: 0.9rem;">
+        <p><strong>Tài khoản test:</strong></p>
+        <p>Admin: admin / 123456</p>
+        <p>User: user1 / 123456</p>
+    </div>
+</div>
+</body>
+</html>
