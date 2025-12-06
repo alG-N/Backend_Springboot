@@ -63,7 +63,9 @@ public class OrderRestController {
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> orderData, Authentication auth) {
         try {
             if (auth == null) {
-                return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Unauthorized");
+                return ResponseEntity.status(401).body(errorResponse);
             }
 
             User user = userService.getUserByUsername(auth.getName())
