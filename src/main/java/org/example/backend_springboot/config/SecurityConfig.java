@@ -25,28 +25,34 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+        auth.userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder());
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers("/", "/products", "/products/**", "/login", "/register", "/css/**", "/js/**", "/img/**").permitAll()
+                .antMatchers("/", "/products", "/products/**").permitAll()
+                .antMatchers("/login", "/register").permitAll()
+                .antMatchers("/css/**", "/js/**", "/img/**").permitAll()
                 .antMatchers("/api/products/**").permitAll()
+                .antMatchers("/api/users/register").permitAll()  // CRITICAL: Cho phép đăng ký
                 .antMatchers("/cart", "/checkout", "/orders/**").authenticated()
+                .antMatchers("/api/cart/**", "/api/orders/**").authenticated()
                 .antMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
                 .loginPage("/login")
                 .defaultSuccessUrl("/", true)
+                .failureUrl("/login?error=true")
                 .permitAll()
                 .and()
                 .logout()
                 .logoutSuccessUrl("/")
                 .permitAll()
                 .and()
-                .csrf().disable(); // Tắt CSRF cho REST API đơn giản
+                .csrf().disable();
     }
 }

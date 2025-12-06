@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,39 +60,54 @@ public class OrderRestController {
     }
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody Map<String, Object> orderData, Authentication auth) {
-        if (auth == null) {
-            return ResponseEntity.status(401).build();
+    public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> orderData, Authentication auth) {
+        try {
+            if (auth == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+            }
+
+            User user = userService.getUserByUsername(auth.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            Order order = new Order();
+            order.setUser(user);
+            order.setShippingAddress((String) orderData.get("shippingAddress"));
+
+            List<OrderDetail> details = new ArrayList<>();
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> items = (List<Map<String, Object>>) orderData.get("items");
+
+            for (Map<String, Object> item : items) {
+                Integer productId = (Integer) item.get("productId");
+                Integer quantity = (Integer) item.get("quantity");
+
+                Product product = productService.getProductById(productId)
+                        .orElseThrow(() -> new RuntimeException("Product not found"));
+
+                OrderDetail detail = new OrderDetail();
+                detail.setProduct(product);
+                detail.setQuantity(quantity);
+                detail.setPrice(product.getPrice());
+                details.add(detail);
+            }
+
+            order.setOrderDetails(details);
+            Order savedOrder = orderService.createOrder(order);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", savedOrder.getId());
+            response.put("orderDate", savedOrder.getOrderDate().toString());
+            response.put("totalAmount", savedOrder.getTotalAmount());
+            response.put("status", savedOrder.getStatus());
+            response.put("shippingAddress", savedOrder.getShippingAddress());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
-
-        User user = userService.getUserByUsername(auth.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Order order = new Order();
-        order.setUser(user);
-        order.setShippingAddress((String) orderData.get("shippingAddress"));
-
-        List<OrderDetail> details = new ArrayList<>();
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> items = (List<Map<String, Object>>) orderData.get("items");
-
-        for (Map<String, Object> item : items) {
-            Integer productId = (Integer) item.get("productId");
-            Integer quantity = (Integer) item.get("quantity");
-
-            Product product = productService.getProductById(productId)
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
-
-            OrderDetail detail = new OrderDetail();
-            detail.setProduct(product);
-            detail.setQuantity(quantity);
-            detail.setPrice(product.getPrice());
-            details.add(detail);
-        }
-
-        order.setOrderDetails(details);
-        Order savedOrder = orderService.createOrder(order);
-
-        return ResponseEntity.ok(savedOrder);
     }
 }

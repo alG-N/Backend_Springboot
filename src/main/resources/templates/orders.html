@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn hàng của tôi</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+
+        .navbar {
+            background: #333;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a { color: white; text-decoration: none; margin: 0 1rem; }
+        .navbar a:hover { color: #ddd; }
+
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+
+        .orders-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+        }
+
+        .orders-empty {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+
+        .order-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1rem;
+        }
+
+        .order-id {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .order-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .order-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-processing { background: #cfe2ff; color: #084298; }
+        .status-shipped { background: #d1ecf1; color: #0c5460; }
+        .status-delivered { background: #d4edda; color: #155724; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+
+        .order-items {
+            margin: 1rem 0;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-name {
+            flex: 1;
+            color: #333;
+        }
+
+        .item-quantity {
+            color: #666;
+            margin: 0 1rem;
+        }
+
+        .item-price {
+            color: #e53935;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: right;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 2px solid #eee;
+            margin-top: 1rem;
+        }
+
+        .shipping-address {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .order-total {
+            font-size: 1.5rem;
+            color: #e53935;
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: #4caf50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .btn:hover { background: #388e3c; }
+        .btn-back { background: #2196f3; }
+        .btn-back:hover { background: #1976d2; }
+    </style>
+</head>
+<body>
+<div class="navbar">
+    <div>
+        <a href="/" style="font-size: 1.5rem; font-weight: bold;">SHOP</a>
+        <a href="/products">Sản phẩm</a>
+    </div>
+    <div>
+        <span sec:authorize="isAuthenticated()">
+            Xin chào, <span sec:authentication="name"></span>
+            <a href="/orders">Đơn hàng</a>
+            <a href="/logout">Đăng xuất</a>
+        </span>
+        <a href="/cart" style="background: #4caf50; padding: 0.5rem 1rem; border-radius: 4px;">Giỏ hàng</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="orders-container">
+        <h1 style="margin-bottom: 2rem;">Đơn hàng của tôi</h1>
+
+        <div id="ordersEmpty" class="orders-empty" style="display: none;">
+            <h2>Chưa có đơn hàng nào</h2>
+            <p style="margin: 1rem 0;">Hãy mua sắm và tạo đơn hàng đầu tiên!</p>
+            <a href="/products" class="btn">Mua sắm ngay</a>
+        </div>
+
+        <div id="ordersList"></div>
+
+        <div style="margin-top: 2rem;">
+            <a href="/products" class="btn btn-back">← Tiếp tục mua sắm</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function loadOrders() {
+        fetch('/api/orders')
+            .then(response => {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                return response.json();
+            })
+            .then(orders => {
+                if (!orders || orders.length === 0) {
+                    document.getElementById('ordersEmpty').style.display = 'block';
+                } else {
+                    document.getElementById('ordersEmpty').style.display = 'none';
+                    renderOrders(orders);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('ordersEmpty').style.display = 'block';
+            });
+    }
+
+    function renderOrders(orders) {
+        const container = document.getElementById('ordersList');
+        container.innerHTML = orders.map(order => `
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <div class="order-id">Đơn hàng #${order.id}</div>
+                        <div class="order-date">${formatDate(order.orderDate)}</div>
+                    </div>
+                    <div class="order-status ${getStatusClass(order.status)}">
+                        ${getStatusText(order.status)}
+                    </div>
+                </div>
+
+                <div class="order-items">
+                    ${order.orderDetails.map(detail => `
+                        <div class="order-item">
+                            <div class="item-name">${detail.product.name}</div>
+                            <div class="item-quantity">x${detail.quantity}</div>
+                            <div class="item-price">${formatPrice(detail.price * detail.quantity)}đ</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="order-footer">
+                    <div class="shipping-address">
+                        <strong>Địa chỉ giao hàng:</strong> ${order.shippingAddress || 'Chưa có'}
+                    </div>
+                    <div class="order-total">
+                        Tổng: ${formatPrice(order.totalAmount)}đ
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function getStatusClass(status) {
+        const statusMap = {
+            'Pending': 'status-pending',
+            'Processing': 'status-processing',
+            'Shipped': 'status-shipped',
+            'Delivered': 'status-delivered',
+            'Cancelled': 'status-cancelled'
+        };
+        return statusMap[status] || 'status-pending';
+    }
+
+    function getStatusText(status) {
+        const statusMap = {
+            'Pending': 'Chờ xử lý',
+            'Processing': 'Đang xử lý',
+            'Shipped': 'Đang giao',
+            'Delivered': 'Đã giao',
+            'Cancelled': 'Đã hủy'
+        };
+        return statusMap[status] || status;
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('vi-VN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function formatPrice(price) {
+        return new Intl.NumberFormat('vi-VN').format(price);
+    }
+
+    loadOrders();
+</script>
+</body>
+</html>

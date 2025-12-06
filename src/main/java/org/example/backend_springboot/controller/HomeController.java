@@ -47,4 +47,14 @@ public class HomeController {
     public String register() {
         return "register";
     }
+
+    @GetMapping("/cart")
+    public String cart() {
+        return "cart";
+    }
+
+    @GetMapping("/orders")
+    public String orders() {
+        return "orders";
+    }
 }
