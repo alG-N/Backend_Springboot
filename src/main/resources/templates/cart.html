@@ -42,13 +42,6 @@
             align-items: center;
         }
 
-        .cart-item img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-
         .item-image {
             width: 100px;
             height: 100px;
@@ -139,6 +132,7 @@
         .btn-back:hover { background: #1976d2; }
         .btn-clear { background: #ff9800; }
         .btn-clear:hover { background: #f57c00; }
+
     </style>
 </head>
 <body>
@@ -186,15 +180,34 @@
 
 <script>
     function loadCart() {
-        fetch('/api/cart')
-            .then(response => response.json())
+        console.log('Loading cart...');
+
+        fetch('/api/cart', {
+            method: 'GET',
+            credentials: 'same-origin', // Quan trọng cho session
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Cart data:', data);
+
                 const items = data.items || [];
                 const total = data.total || 0;
 
                 if (items.length === 0) {
                     document.getElementById('cartEmpty').style.display = 'block';
                     document.getElementById('cartSummary').style.display = 'none';
+                    document.getElementById('cartItems').innerHTML = '';
                 } else {
                     document.getElementById('cartEmpty').style.display = 'none';
                     document.getElementById('cartSummary').style.display = 'block';
@@ -202,7 +215,15 @@
                     document.getElementById('totalPrice').textContent = formatPrice(total) + 'đ';
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error loading cart:', error);
+                const debugInfo = document.getElementById('debugInfo');
+                debugInfo.style.display = 'block';
+                debugInfo.innerHTML = `<strong>Error:</strong> ${error.message}`;
+
+                document.getElementById('cartEmpty').style.display = 'block';
+                document.getElementById('cartSummary').style.display = 'none';
+            });
     }
 
     function renderCartItems(items) {
@@ -211,16 +232,15 @@
             <div class="cart-item">
                 <div class="item-image">No Image</div>
                 <div class="item-info">
-                    <h3>${item.productName}</h3>
-                    <div class="item-price">${formatPrice(item.price)}đ</div>
+                    <h3>${item.productName || 'Unknown Product'}</h3>
+                    <div class="item-price">${formatPrice(item.price || 0)}đ</div>
                 </div>
                 <div class="quantity-control">
                     <button onclick="updateQuantity(${item.productId}, ${item.quantity - 1})">-</button>
-                    <input type="number" value="${item.quantity}" min="1"
-                           onchange="updateQuantity(${item.productId}, this.value)" readonly>
+                    <input type="number" value="${item.quantity}" min="1" readonly>
                     <button onclick="updateQuantity(${item.productId}, ${item.quantity + 1})">+</button>
                 </div>
-                <div class="item-price">${formatPrice(item.price * item.quantity)}đ</div>
+                <div class="item-price">${formatPrice((item.price || 0) * (item.quantity || 0))}đ</div>
                 <button class="btn-remove" onclick="removeItem(${item.productId})">Xóa</button>
             </div>
         `).join('');
@@ -231,6 +251,7 @@
 
         fetch(`/api/cart/update/${productId}`, {
             method: 'PUT',
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ quantity: parseInt(quantity) })
         })
@@ -240,7 +261,10 @@
 
     function removeItem(productId) {
         if (confirm('Xóa sản phẩm này khỏi giỏ hàng?')) {
-            fetch(`/api/cart/remove/${productId}`, { method: 'DELETE' })
+            fetch(`/api/cart/remove/${productId}`, {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            })
                 .then(() => loadCart())
                 .catch(error => console.error('Error:', error));
         }
@@ -248,7 +272,10 @@
 
     function clearCart() {
         if (confirm('Xóa toàn bộ giỏ hàng?')) {
-            fetch('/api/cart/clear', { method: 'DELETE' })
+            fetch('/api/cart/clear', {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            })
                 .then(() => loadCart())
                 .catch(error => console.error('Error:', error));
         }
@@ -261,13 +288,10 @@
             return;
         }
 
-        fetch('/api/cart')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Không thể lấy thông tin giỏ hàng');
-                }
-                return response.json();
-            })
+        fetch('/api/cart', {
+            credentials: 'same-origin'
+        })
+            .then(response => response.json())
             .then(data => {
                 if (!data.items || data.items.length === 0) {
                     throw new Error('Giỏ hàng trống!');
@@ -281,37 +305,30 @@
                     }))
                 };
 
-                console.log('Sending order data:', orderData);
-
                 return fetch('/api/orders', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData)
                 });
             })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('Không thể tạo đơn hàng. Status: ' + response.status);
-                }
+                if (!response.ok) throw new Error('Không thể tạo đơn hàng');
                 return response.json();
             })
             .then(order => {
-                console.log('Order created:', order);
-
-                if (order && order.id) {
-                    alert('Đặt hàng thành công! Mã đơn hàng: #' + order.id);
-
-                    return fetch('/api/cart/clear', { method: 'DELETE' })
-                        .then(() => {
-                            window.location.href = '/orders';
-                        });
-                } else {
-                    throw new Error('Không nhận được mã đơn hàng');
-                }
+                alert('Đặt hàng thành công! Mã đơn hàng: #' + order.id);
+                return fetch('/api/cart/clear', {
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+            })
+            .then(() => {
+                window.location.href = '/orders';
             })
             .catch(error => {
                 console.error('Checkout error:', error);
-                alert('Có lỗi xảy ra: ' + error.message + '\nVui lòng thử lại!');
+                alert('Có lỗi xảy ra: ' + error.message);
             });
     }
 

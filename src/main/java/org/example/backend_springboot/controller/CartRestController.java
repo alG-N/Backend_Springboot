@@ -12,7 +12,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cart")
-@CrossOrigin(origins = "*")
 public class CartRestController {
 
     @GetMapping
@@ -80,7 +79,6 @@ public class CartRestController {
         return cart;
     }
 
-    // Inner class cho CartItem
     public static class CartItem {
         private Integer productId;
         private String productName;
@@ -88,7 +86,6 @@ public class CartRestController {
         private Integer quantity;
         private String image;
 
-        // Getters and Setters
         public Integer getProductId() { return productId; }
         public void setProductId(Integer productId) { this.productId = productId; }
 

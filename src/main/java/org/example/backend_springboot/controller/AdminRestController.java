@@ -15,7 +15,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = "*")
 public class AdminRestController {
 
     @Autowired
@@ -27,7 +26,6 @@ public class AdminRestController {
     @Autowired
     private OrderService orderService;
 
-    // ===== PRODUCT MANAGEMENT =====
     @GetMapping("/products")
     public ResponseEntity<List<Product>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
@@ -50,7 +48,6 @@ public class AdminRestController {
         return ResponseEntity.ok("Product deleted");
     }
 
-    // ===== USER MANAGEMENT =====
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
@@ -62,7 +59,6 @@ public class AdminRestController {
         return ResponseEntity.ok("User deleted");
     }
 
-    // ===== ORDER MANAGEMENT =====
     @GetMapping("/orders")
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
