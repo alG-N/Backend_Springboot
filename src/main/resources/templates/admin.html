@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản trị Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .navbar {
+            background: #333;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+        }
+        .navbar a:hover { color: #ddd; }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin: 0 0.25rem;
+        }
+
+        .btn-primary { background: #2196f3; color: white; }
+        .btn-primary:hover { background: #1976d2; }
+        .btn-success { background: #4caf50; color: white; }
+        .btn-success:hover { background: #388e3c; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn-danger:hover { background: #d32f2f; }
+        .btn-warning { background: #ff9800; color: white; }
+        .btn-warning:hover { background: #f57c00; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-processing { background: #cfe2ff; color: #084298; }
+        .status-shipped { background: #d1ecf1; color: #0c5460; }
+        .status-delivered { background: #d4edda; color: #155724; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+<div class="navbar">
+    <div>
+        <a href="/" style="font-size: 1.5rem; font-weight: bold;">SHOP ADMIN</a>
+    </div>
+    <div>
+        <a href="/">Về trang chủ</a>
+        <a href="/logout">Đăng xuất</a>
+    </div>
+</div>
+
+<div class="container">
+    <h1 style="margin-bottom: 2rem;">Bảng điều khiển Admin</h1>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number" id="statProducts">0</div>
+            <div class="stat-label">Sản phẩm</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="statOrders">0</div>
+            <div class="stat-label">Đơn hàng</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="statUsers">0</div>
+            <div class="stat-label">Người dùng</div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('products')">Sản phẩm</button>
+        <button class="tab" onclick="switchTab('orders')">Đơn hàng</button>
+        <button class="tab" onclick="switchTab('users')">Người dùng</button>
+    </div>
+
+    <div id="products-tab" class="tab-content active">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+            <h2>Quản lý sản phẩm</h2>
+            <button class="btn btn-success" onclick="openProductModal()">+ Thêm sản phẩm</button>
+        </div>
+        <table id="productsTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên</th>
+                <th>Giá</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="orders-tab" class="tab-content">
+        <h2 style="margin-bottom: 1rem;">Quản lý đơn hàng</h2>
+        <table id="ordersTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Khách hàng</th>
+                <th>Ngày đặt</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="users-tab" class="tab-content">
+        <h2 style="margin-bottom: 1rem;">Quản lý người dùng</h2>
+        <table id="usersTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Số điện thoại</th>
+                <th>Thao tác</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="productModal" class="modal">
+    <div class="modal-content">
+        <h2 id="productModalTitle">Thêm sản phẩm</h2>
+        <form id="productForm">
+            <input type="hidden" id="productId">
+            <div class="form-group">
+                <label>Tên sản phẩm *</label>
+                <input type="text" id="productName" required>
+            </div>
+            <div class="form-group">
+                <label>Giá *</label>
+                <input type="number" id="productPrice" required step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Mô tả</label>
+                <textarea id="productDescription"></textarea>
+            </div>
+            <div class="form-group">
+                <label>URL hình ảnh</label>
+                <input type="text" id="productImage">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="productAvailable" checked>
+                    Còn hàng
+                </label>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-success">Lưu</button>
+                <button type="button" class="btn btn-danger" onclick="closeProductModal()">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="orderModal" class="modal">
+    <div class="modal-content">
+        <h2>Cập nhật trạng thái đơn hàng</h2>
+        <form id="orderForm">
+            <input type="hidden" id="orderId">
+            <div class="form-group">
+                <label>Trạng thái</label>
+                <select id="orderStatus">
+                    <option value="Pending">Chờ xử lý</option>
+                    <option value="Processing">Đang xử lý</option>
+                    <option value="Shipped">Đang giao</option>
+                    <option value="Delivered">Đã giao</option>
+                    <option value="Cancelled">Đã hủy</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-success">Cập nhật</button>
+                <button type="button" class="btn btn-danger" onclick="closeOrderModal()">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        event.target.classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+
+        if (tabName === 'products') loadProducts();
+        if (tabName === 'orders') loadOrders();
+        if (tabName === 'users') loadUsers();
+    }
+
+    function loadStats() {
+        fetch('/api/admin/products')
+            .then(r => r.json())
+            .then(data => document.getElementById('statProducts').textContent = data.length);
+
+        fetch('/api/admin/orders')
+            .then(r => r.json())
+            .then(data => document.getElementById('statOrders').textContent = data.length);
+
+        fetch('/api/admin/users')
+            .then(r => r.json())
+            .then(data => document.getElementById('statUsers').textContent = data.length);
+    }
+
+    function loadProducts() {
+        fetch('/api/admin/products')
+            .then(r => r.json())
+            .then(products => {
+                const tbody = document.querySelector('#productsTable tbody');
+                tbody.innerHTML = products.map(p => `
+                        <tr>
+                            <td>${p.id}</td>
+                            <td>${p.name}</td>
+                            <td>${formatPrice(p.price)}đ</td>
+                            <td>${p.available ? '✅ Còn hàng' : '❌ Hết hàng'}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick='editProduct(${JSON.stringify(p)})'>Sửa</button>
+                                <button class="btn btn-danger" onclick="deleteProduct(${p.id})">Xóa</button>
+                            </td>
+                        </tr>
+                    `).join('');
+            });
+    }
+
+    function openProductModal(product = null) {
+        document.getElementById('productModal').classList.add('active');
+        document.getElementById('productModalTitle').textContent = product ? 'Sửa sản phẩm' : 'Thêm sản phẩm';
+
+        if (product) {
+            document.getElementById('productId').value = product.id;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productPrice').value = product.price;
+            document.getElementById('productDescription').value = product.description || '';
+            document.getElementById('productImage').value = product.image || '';
+            document.getElementById('productAvailable').checked = product.available;
+        } else {
+            document.getElementById('productForm').reset();
+            document.getElementById('productId').value = '';
+        }
+    }
+
+    function closeProductModal() {
+        document.getElementById('productModal').classList.remove('active');
+    }
+
+    function editProduct(product) {
+        openProductModal(product);
+    }
+
+    function deleteProduct(id) {
+        if (!confirm('Xóa sản phẩm này?')) return;
+
+        fetch(`/api/admin/products/${id}`, { method: 'DELETE' })
+            .then(() => {
+                alert('Đã xóa!');
+                loadProducts();
+                loadStats();
+            })
+            .catch(err => alert('Lỗi: ' + err));
+    }
+
+    document.getElementById('productForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('productId').value;
+        const product = {
+            name: document.getElementById('productName').value,
+            price: parseFloat(document.getElementById('productPrice').value),
+            description: document.getElementById('productDescription').value,
+            image: document.getElementById('productImage').value,
+            available: document.getElementById('productAvailable').checked
+        };
+
+        const url = id ? `/api/admin/products/${id}` : '/api/admin/products';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product)
+        })
+            .then(() => {
+                alert('Lưu thành công!');
+                closeProductModal();
+                loadProducts();
+                loadStats();
+            })
+            .catch(err => alert('Lỗi: ' + err));
+    });
+
+    function loadOrders() {
+        fetch('/api/admin/orders')
+            .then(r => r.json())
+            .then(orders => {
+                const tbody = document.querySelector('#ordersTable tbody');
+                tbody.innerHTML = orders.map(o => `
+                        <tr>
+                            <td>#${o.id}</td>
+                            <td>${o.user.username}</td>
+                            <td>${formatDate(o.orderDate)}</td>
+                            <td>${formatPrice(o.totalAmount)}đ</td>
+                            <td><span class="status-badge ${getStatusClass(o.status)}">${getStatusText(o.status)}</span></td>
+                            <td>
+                                <button class="btn btn-warning" onclick="openOrderModal(${o.id}, '${o.status}')">Sửa trạng thái</button>
+                                <button class="btn btn-danger" onclick="deleteOrder(${o.id})">Xóa</button>
+                            </td>
+                        </tr>
+                    `).join('');
+            });
+    }
+
+    function openOrderModal(orderId, status) {
+        document.getElementById('orderModal').classList.add('active');
+        document.getElementById('orderId').value = orderId;
+        document.getElementById('orderStatus').value = status;
+    }
+
+    function closeOrderModal() {
+        document.getElementById('orderModal').classList.remove('active');
+    }
+
+    function deleteOrder(id) {
+        if (!confirm('Xóa đơn hàng này?')) return;
+
+        fetch(`/api/admin/orders/${id}`, { method: 'DELETE' })
+            .then(() => {
+                alert('Đã xóa!');
+                loadOrders();
+                loadStats();
+            })
+            .catch(err => alert('Lỗi: ' + err));
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('orderId').value;
+        const status = document.getElementById('orderStatus').value;
+
+        fetch(`/api/admin/orders/${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        })
+            .then(() => {
+                alert('Cập nhật thành công!');
+                closeOrderModal();
+                loadOrders();
+            })
+            .catch(err => alert('Lỗi: ' + err));
+    });
+
+    function loadUsers() {
+        fetch('/api/admin/users')
+            .then(r => r.json())
+            .then(users => {
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = users.map(u => `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${u.username}</td>
+                            <td>${u.fullname || '-'}</td>
+                            <td>${u.email || '-'}</td>
+                            <td>${u.phone || '-'}</td>
+                            <td>
+                                <button class="btn btn-danger" onclick="deleteUser(${u.id})">Xóa</button>
+                            </td>
+                        </tr>
+                    `).join('');
+            });
+    }
+
+    function deleteUser(id) {
+        if (!confirm('Xóa người dùng này?')) return;
+
+        fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+            .then(() => {
+                alert('Đã xóa!');
+                loadUsers();
+                loadStats();
+            })
+            .catch(err => alert('Lỗi: ' + err));
+    }
+
+    function formatPrice(price) {
+        return new Intl.NumberFormat('vi-VN').format(price);
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('vi-VN');
+    }
+
+    function getStatusClass(status) {
+        const map = {
+            'Pending': 'status-pending',
+            'Processing': 'status-processing',
+            'Shipped': 'status-shipped',
+            'Delivered': 'status-delivered',
+            'Cancelled': 'status-cancelled'
+        };
+        return map[status] || 'status-pending';
+    }
+
+    function getStatusText(status) {
+        const map = {
+            'Pending': 'Chờ xử lý',
+            'Processing': 'Đang xử lý',
+            'Shipped': 'Đang giao',
+            'Delivered': 'Đã giao',
+            'Cancelled': 'Đã hủy'
+        };
+        return map[status] || status;
+    }
+
+    loadStats();
+    loadProducts();
+</script>
+</body>
+</html>

@@ -78,8 +78,26 @@ public class OrderRestController {
             List<Map<String, Object>> items = (List<Map<String, Object>>) orderData.get("items");
 
             for (Map<String, Object> item : items) {
-                Integer productId = (Integer) item.get("productId");
-                Integer quantity = (Integer) item.get("quantity");
+                Integer productId;
+                Integer quantity;
+
+                Object pidObj = item.get("productId");
+                if (pidObj instanceof Integer) {
+                    productId = (Integer) pidObj;
+                } else if (pidObj instanceof Double) {
+                    productId = ((Double) pidObj).intValue();
+                } else {
+                    productId = Integer.parseInt(pidObj.toString());
+                }
+
+                Object qtyObj = item.get("quantity");
+                if (qtyObj instanceof Integer) {
+                    quantity = (Integer) qtyObj;
+                } else if (qtyObj instanceof Double) {
+                    quantity = ((Double) qtyObj).intValue();
+                } else {
+                    quantity = Integer.parseInt(qtyObj.toString());
+                }
 
                 Product product = productService.getProductById(productId)
                         .orElseThrow(() -> new RuntimeException("Product not found"));
